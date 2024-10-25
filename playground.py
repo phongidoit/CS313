@@ -1,6 +1,8 @@
 import numpy as np
 from matplotlib import pyplot as plt
+import seaborn as sns
 from scipy.cluster.hierarchy import dendrogram
+import pandas as pd
 
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.datasets import load_iris
@@ -29,16 +31,20 @@ def plot_dendrogram(model, **kwargs):
     dendrogram(linkage_matrix, **kwargs)
 
 def generate_data():
-    return np.random.rand((20,2))
+   return np.random.rand(20,2)
+   
     
 iris = load_iris()
-X = iris.data
-print(X)
+X = generate_data()
+X_pd = pd.DataFrame(X, columns=["x","y"])
+print(X.shape)
 
 # setting distance_threshold=0 ensures we compute the full tree.
 model = AgglomerativeClustering(distance_threshold=0, n_clusters=None)
 
 model = model.fit(X)
+sns.scatterplot(data=X_pd, x='x', y='y')
+plt.show()
 plt.title("Hierarchical Clustering Dendrogram")
 # plot the top three levels of the dendrogram
 plot_dendrogram(model, truncate_mode="level", p=3)
