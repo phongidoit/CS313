@@ -54,7 +54,10 @@ result = model.fit_predict(X)
 
 n_samples = len(X)
 clusters = [[i] for i in range(n_samples)]
+print(model.children_)
+print("res:", model)
 for i, (left, right) in enumerate(model.children_):
+    print(left, right)
     new_cluster = clusters[left] + clusters[right]
     clusters.append(new_cluster)
     clusters[left] = []
@@ -65,26 +68,26 @@ for i, (left, right) in enumerate(model.children_):
     print(f"Iteration {i+1}: Clusters - {active_clusters}")
     for index in range (n_samples):
             X_pd.at[index, "color"] = find_cluster(index, active_clusters)
-            print(X_pd.color)
+            # print(X_pd.color)
             
-    plt.title("Scatter plot " + str(i))
-    sns.scatterplot(data=X_pd, x='x', y='y', hue='color', palette = "Paired")
-    plt.show()        
+    # plt.title("Scatter plot " + str(i))
+    # sns.scatterplot(data=X_pd, x='x', y='y', hue='color', palette = "Paired")
+    # plt.show()        
             
             
     if len(active_clusters) <= 3:
         break
     
-    
+print(clusters)    
 # plt.title("Final plot")   
 # sns.scatterplot(data=X_pd, x='x', y='y', hue='color')
 #print(result)
 
-plt.show()
+# plt.show()
 
     
 # plt.title("Hierarchical Clustering Dendrogram")
 # plot the top three levels of the dendrogram
-# plot_dendrogram(model, truncate_mode="level", p=3)
+#plot_dendrogram(model, truncate_mode="level", p=3)
 # plt.xlabel("Number of points in node (or index of point if no parenthesis).")
-# plt.show()
+#plt.show()

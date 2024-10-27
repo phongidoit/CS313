@@ -1,3 +1,4 @@
+import time
 import warnings
 
 import altair as alt
@@ -55,18 +56,27 @@ def apply_clustering(model_name, data, n_clusters):
     elif model_name == "Probabilistic":
         model = GaussianMixture(n_components=n_clusters)  # Number of clusters set to 2
         model.fit(data)
-        return model.predict(data)
+        return model.predict(data), model
     else:
         raise ValueError("Model not implemented or available.")
     
-    return model.fit_predict(data)
+    return model.fit_predict(data), model
 
+def find_cluster(element, clusters):
+    for idx, cluster in enumerate(clusters):
+        if element in cluster:
+            return idx
+    return -1
+
+def get_label_each_iteration():
+    pass
 
 def main():
     st.title("Visualization clustering")
     container = st.container()
     
     col1, col2 = container.columns(2)
+
         
     with col1:
         option = st.selectbox("Choose data type?",("noisy_circles", "noisy_moons", "blobs", "no_structure", "aniso", ),)
@@ -116,23 +126,35 @@ def main():
         # Button to run clustering
         if st.button("Run Clustering"):
             # Apply clustering
-            cluster_labels = apply_clustering(model_option, data, n_clusters)
+            cluster_labels, model_data = apply_clustering(model_option, data, n_clusters)
             data_pd = pd.DataFrame(data, columns=["x", "y"])
-            data_pd["cluster"] = cluster_labels
+            chart_area = st.empty()
             
-            # Plot the clustering results
-            chart = alt.Chart(data_pd).mark_circle(size=60).encode(
-                x="x",
-                y="y",
-                color="cluster:N",
-                tooltip=["x", "y", "cluster"]
-            ).properties(
-                width=700,
-                height=500,
-                title=f"{title} - Clustering with {model_option}"
-            ).interactive()
-            
-            st.altair_chart(chart)
+            #Loop through the animation
+            clusters = [[i] for i in range(numberDatapoints)]
+            for i, (left, right) in enumerate(model_data.children_):
+                new_cluster = clusters[left] + clusters[right]
+                clusters.append(new_cluster)
+                clusters[left] = []
+                clusters[right] = []
+                active_clusters = [c for c in clusters if c]
+                labels = [find_cluster(item, active_clusters) for item in range(numberDatapoints)]
+                data_pd["cluster"] = labels
+                chart = alt.Chart(data_pd).mark_circle(size=60).encode(
+                    x="x",
+                    y="y",
+                    color="cluster:N",
+                    tooltip=["x", "y", "cluster"]
+                    ).properties(
+                        width=700,
+                        height=500,
+                        title=f"{title} - Clustering with {model_option}"
+                ).interactive()
+                
+                chart_area.altair_chart(chart)
+                if len(active_clusters) <= n_clusters:
+                    break
+                time.sleep(0.6)
 
 
 if __name__ == "__main__":
