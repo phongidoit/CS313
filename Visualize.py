@@ -77,31 +77,31 @@ def main():
         min_value=50,
         ) 
         
-    if container.button("Run", type = 'primary'):
-        st.write("Chart here") 
+    if container.button("Run", type = 'primary'): 
         data, labels, title = generate_data(option, numberDatapoints)
+        data = pd.DataFrame(data, columns=["x","y"]) 
 
         st.session_state['data'] = data  # Store generated data in session state
         st.session_state['labels'] = labels  # Store generated labels in session state
         st.session_state['title'] = title  # Store title in session state
 
         # st.write(data)
-        data_pd = pd.DataFrame(data, columns=["x","y"]) 
-        # st.scatter_chart(data_pd, x="x", y="y")
-        st.session_state['scatter_chart'] = st.scatter_chart(data_pd, x="x", y="y")
+        # st.scatter_chart(data, x="x", y="y")
         
     
     # Check if data is generated and stored in session state
     if 'data' in st.session_state:
-        st.write("### Select a Clustering Model and Run")
-        
+        container.write("Chart here")
+        container.write("### Select a Clustering Model and Run")
+        data = st.session_state['data']
+        title = st.session_state['title']
+        labels = st.session_state['labels']
+        st.scatter_chart(data, x="x", y="y")
         # Model selection dropdown
         model_option = st.selectbox("Choose clustering model", ("AGNES", "DIANA", "BIRCH", "Probabilistic"))
         
         # Button to run clustering
         if st.button("Run Clustering"):
-            data = st.session_state['data']
-            title = st.session_state['title']
             
             # Apply clustering
             cluster_labels = apply_clustering(model_option, data)
@@ -114,14 +114,12 @@ def main():
                 y="y",
                 color="cluster:N",
                 tooltip=["x", "y", "cluster"]
-            ).properties(
-                width=500,
-                height=400,
-                title=f"{title} - Clustering with {model_option}"
-            )
+            ).interactive()
             
             st.altair_chart(chart)
-
+            
+        
+        
 
 if __name__ == "__main__":
     main()  
