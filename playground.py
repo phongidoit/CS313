@@ -31,22 +31,60 @@ def plot_dendrogram(model, **kwargs):
     dendrogram(linkage_matrix, **kwargs)
 
 def generate_data():
-   return np.random.rand(20,2)
+   return np.random.rand(7,2)
+
+def find_cluster(element, clusters):
+    for idx, cluster in enumerate(clusters):
+        if element in cluster:
+            return idx
+    return -1
    
     
 iris = load_iris()
 X = generate_data()
 X_pd = pd.DataFrame(X, columns=["x","y"])
-print(X.shape)
-
+# print(X.shape)
+X_pd['color'] = X_pd.index
 # setting distance_threshold=0 ensures we compute the full tree.
-model = AgglomerativeClustering(distance_threshold=0, n_clusters=None)
+model = AgglomerativeClustering(n_clusters=None, distance_threshold=0)
 
 model = model.fit(X)
-sns.scatterplot(data=X_pd, x='x', y='y')
+result = model.fit_predict(X)
+
+
+n_samples = len(X)
+clusters = [[i] for i in range(n_samples)]
+for i, (left, right) in enumerate(model.children_):
+    new_cluster = clusters[left] + clusters[right]
+    clusters.append(new_cluster)
+    clusters[left] = []
+    clusters[right] = []
+    
+    # Filter out empty clusters and print the current state
+    active_clusters = [c for c in clusters if c]
+    print(f"Iteration {i+1}: Clusters - {active_clusters}")
+    for index in range (n_samples):
+            X_pd.at[index, "color"] = find_cluster(index, active_clusters)
+            print(X_pd.color)
+            
+    plt.title("Scatter plot " + str(i))
+    sns.scatterplot(data=X_pd, x='x', y='y', hue='color', palette = "Paired")
+    plt.show()        
+            
+            
+    if len(active_clusters) <= 3:
+        break
+    
+    
+# plt.title("Final plot")   
+# sns.scatterplot(data=X_pd, x='x', y='y', hue='color')
+#print(result)
+
 plt.show()
-plt.title("Hierarchical Clustering Dendrogram")
+
+    
+# plt.title("Hierarchical Clustering Dendrogram")
 # plot the top three levels of the dendrogram
-plot_dendrogram(model, truncate_mode="level", p=3)
-plt.xlabel("Number of points in node (or index of point if no parenthesis).")
-plt.show()
+# plot_dendrogram(model, truncate_mode="level", p=3)
+# plt.xlabel("Number of points in node (or index of point if no parenthesis).")
+# plt.show()

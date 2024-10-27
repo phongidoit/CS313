@@ -15,6 +15,9 @@ warnings.filterwarnings("ignore")
 
 def generate_data(dataset_name, n_samples=50, seed=30):
     rng = np.random.RandomState(seed)
+    rng = np.random.RandomState(seed)
+    
+    rng = np.random.RandomState(seed)  
     
     if dataset_name == "noisy_circles":
         data = datasets.make_circles(n_samples=n_samples, factor=0.5, noise=0.05, random_state=seed)
@@ -42,23 +45,21 @@ def generate_data(dataset_name, n_samples=50, seed=30):
     return np.array(data[0]), np.array(data[1]), title
 
 
-def apply_clustering(model_name, data):
+def apply_clustering(model_name, data, n_clusters):
     if model_name == "AGNES":
-        model = AgglomerativeClustering(linkage="ward")
+        model = AgglomerativeClustering(linkage="ward", n_clusters=n_clusters)
     elif model_name == "DIANA":
-        model = AgglomerativeClustering(linkage="complete")
+        model = AgglomerativeClustering(linkage="complete", n_clusters=n_clusters)
     elif model_name == "BIRCH":
-        model = Birch()
+        model = Birch(n_clusters=n_clusters)
     elif model_name == "Probabilistic":
-        model = GaussianMixture(n_components=2)  # Number of clusters set to 2
+        model = GaussianMixture(n_components=n_clusters)  # Number of clusters set to 2
         model.fit(data)
         return model.predict(data)
     else:
         raise ValueError("Model not implemented or available.")
     
     return model.fit_predict(data)
-
-
 
 
 def main():
@@ -98,13 +99,24 @@ def main():
         labels = st.session_state['labels']
         st.scatter_chart(data, x="x", y="y")
         # Model selection dropdown
-        model_option = st.selectbox("Choose clustering model", ("AGNES", "DIANA", "BIRCH", "Probabilistic"))
+
+        container1 = st.container()
+    
+        sub_col1, sub_col2 = container1.columns(2)
+        
+        with sub_col1:
+            model_option = st.selectbox("Choose clustering model", ("AGNES", "DIANA", "BIRCH", "Probabilistic"))
+            
+        with sub_col2:
+            n_clusters = st.number_input(
+                            "Number of clusters",
+                            min_value=2,
+                            ) 
         
         # Button to run clustering
         if st.button("Run Clustering"):
-            
             # Apply clustering
-            cluster_labels = apply_clustering(model_option, data)
+            cluster_labels = apply_clustering(model_option, data, n_clusters)
             data_pd = pd.DataFrame(data, columns=["x", "y"])
             data_pd["cluster"] = cluster_labels
             
@@ -114,12 +126,14 @@ def main():
                 y="y",
                 color="cluster:N",
                 tooltip=["x", "y", "cluster"]
+            ).properties(
+                width=700,
+                height=500,
+                title=f"{title} - Clustering with {model_option}"
             ).interactive()
             
             st.altair_chart(chart)
-            
-        
-        
+
 
 if __name__ == "__main__":
     main()  
