@@ -9,15 +9,12 @@ import pandas as pd
 from sklearn import datasets
 from sklearn.cluster import AgglomerativeClustering, Birch
 from sklearn.mixture import GaussianMixture
-
+from diana import DianaClustering
 
 warnings.filterwarnings("ignore")
 
 
-def generate_data(dataset_name, n_samples=50, seed=30):
-    rng = np.random.RandomState(seed)
-    rng = np.random.RandomState(seed)
-    
+def generate_data(dataset_name, n_samples=50, seed=30):    
     rng = np.random.RandomState(seed)  
     
     if dataset_name == "noisy_circles":
@@ -50,7 +47,10 @@ def apply_clustering(model_name, data, n_clusters):
     if model_name == "AGNES":
         model = AgglomerativeClustering(linkage="ward", n_clusters=n_clusters)
     elif model_name == "DIANA":
-        model = AgglomerativeClustering(linkage="complete", n_clusters=n_clusters)
+        # model = AgglomerativeClustering(linkage="complete", n_clusters=n_clusters)
+        model = DianaClustering(data)
+        cluster_labels = model.fit(n_clusters)
+        return cluster_labels, None
     elif model_name == "BIRCH":
         model = Birch(n_clusters=n_clusters)
         return model.fit_predict(data), None
@@ -75,12 +75,20 @@ def get_label_each_iteration():
 def main():
     st.title("Visualization clustering")
     container = st.container()
-    
+    container.write("### Generated Data")
     col1, col2 = container.columns(2)
 
-        
+    data_types = {
+        "Noisy Circles": "noisy_circles",
+        "Noisy Moons": "noisy_moons",
+        "Blobs": "blobs",
+        "No Structure": "no_structure",
+        "Anisotropic Blobs": "aniso",
+        "Blobs with Varied Variances": "varied"
+    }
+
     with col1:
-        option = st.selectbox("Choose data type?",("noisy_circles", "noisy_moons", "blobs", "no_structure", "aniso", ),)
+        option = st.selectbox("Choose data type?",list(data_types.keys()),)
         
             
     with col2:
@@ -90,7 +98,7 @@ def main():
         ) 
         
     if container.button("Run", type = 'primary'): 
-        data, labels, title = generate_data(option, numberDatapoints)
+        data, labels, title = generate_data(data_types[option], numberDatapoints)
         data = pd.DataFrame(data, columns=["x","y"]) 
 
         st.session_state['data'] = data  # Store generated data in session state
@@ -103,12 +111,12 @@ def main():
     
     # Check if data is generated and stored in session state
     if 'data' in st.session_state:
-        container.write("Chart here")
-        container.write("### Select a Clustering Model and Run")
         data = st.session_state['data']
         title = st.session_state['title']
         labels = st.session_state['labels']
-        st.scatter_chart(data, x="x", y="y")
+        container.write("Chart here")
+        container.scatter_chart(data, x="x", y="y")
+        container.write("### Select a Clustering Model and Run")
         # Model selection dropdown
 
         container1 = st.container()
@@ -130,6 +138,7 @@ def main():
             cluster_labels, model_data = apply_clustering(model_option, data, n_clusters)
             data_pd = pd.DataFrame(data, columns=["x", "y"])
             chart_area = st.empty()
+            
             if model_data is not None:
                 #Loop through the animation for agglo algorithm
                 clusters = [[i] for i in range(numberDatapoints)]
@@ -171,7 +180,7 @@ def main():
                             height=500,
                             title=f"{title} - Clustering with {model_option}"
                     ).interactive()
-                chart_area.altair_chart(chart)                 
+                chart_area.altair_chart(chart, use_container_width=True)                 
 
 
 if __name__ == "__main__":
