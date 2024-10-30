@@ -50,7 +50,7 @@ def apply_clustering(model_name, data, n_clusters):
         # model = AgglomerativeClustering(linkage="complete", n_clusters=n_clusters)
         model = DianaClustering(data)
         cluster_labels = model.fit(n_clusters)
-        return cluster_labels, None
+        return cluster_labels, model.children_
     elif model_name == "BIRCH":
         model = Birch(n_clusters=n_clusters)
         return model.fit_predict(data), None
@@ -105,8 +105,6 @@ def main():
         st.session_state['labels'] = labels  # Store generated labels in session state
         st.session_state['title'] = title  # Store title in session state
 
-        # st.write(data)
-        # st.scatter_chart(data, x="x", y="y")
         
     
     # Check if data is generated and stored in session state
@@ -139,10 +137,11 @@ def main():
             data_pd = pd.DataFrame(data, columns=["x", "y"])
             chart_area = st.empty()
             
-            if model_data is not None:
-                #Loop through the animation for agglo algorithm
-                clusters = [[i] for i in range(numberDatapoints)]
+            if model_data is not None and model_option=="AGNES":
+                #Loop through the animation for agglo algorithm                
                 labels = [i for i in range(numberDatapoints)]
+                
+                clusters = [[i] for i in range(numberDatapoints)]
                 for i, (left, right) in enumerate(model_data):
                     new_cluster = clusters[left] + clusters[right]
                     relabel = min(labels[clusters[left][0]], labels[clusters[right][0]])
@@ -168,6 +167,33 @@ def main():
                     if i > numberDatapoints - n_clusters - 2:
                         break
                     time.sleep(0.7)
+            elif model_data is not None and model_option=="DIANA":
+                data_pd["cluster"] = labels
+
+                # Top-Down Animation of DIANA Clustering
+                for i, (splinters, remaining) in enumerate(model_data):
+                    # Assign new labels for the split
+                    new_cluster_label = max(labels) + 1
+                    for idx in splinters:
+                        labels[idx] = new_cluster_label  # Assign new cluster to splinters
+                    
+                    data_pd["cluster"] = labels
+                    chart = alt.Chart(data_pd).mark_circle(size=200).encode(
+                        x="x",
+                        y="y",
+                        color="cluster:N",
+                        tooltip=["x", "y", "cluster"]
+                    ).properties(
+                        width=700,
+                        height=500,
+                        title=f"DIANA Clustering - Step {i+1}"
+                    ).interactive()
+                    
+                    chart_area.altair_chart(chart)
+                    time.sleep(2)
+
+                    if len(np.unique(labels)) >= n_clusters:
+                        break
             else:
                 data_pd["cluster"] = cluster_labels
                 chart = alt.Chart(data_pd).mark_circle(size=200).encode(
