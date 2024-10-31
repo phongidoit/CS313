@@ -1,12 +1,8 @@
 import numpy as np
-import pandas as pd
-import altair as alt
-import time
-import streamlit as st
 from scipy.spatial.distance import pdist, squareform
 
 # Helper function to compute the distance matrix
-def DistanceMatrix(data):
+def DistanceMatrix(data, metric):
     '''
     This function computes the pairwise Euclidean distance matrix for the data.
     
@@ -18,17 +14,20 @@ def DistanceMatrix(data):
     -------
     Distance matrix of shape (n_samples, n_samples)
     '''
-    return squareform(pdist(data, metric='euclidean'))
+    if metric=="manhattan":
+        metric="cityblock"
+    return squareform(pdist(data, metric=metric))
 
 # DianaClustering Class
 class DianaClustering:
-    def __init__(self, data): 
+    def __init__(self, data, metric='euclidean'): 
         '''
         Constructor of the class, it takes the main data frame as input
         '''
         self.data = data  
         self.n_samples, self.n_features = data.shape
         self.children_ = []  # To save the history of splits
+        self.metric = metric
 
     def fit(self, n_clusters):
         '''
@@ -45,7 +44,7 @@ class DianaClustering:
                          An array where the cluster number of a sample corresponding 
                          to the same index is stored
         '''
-        similarity_matrix = DistanceMatrix(self.data)  # similarity matrix of the data
+        similarity_matrix = DistanceMatrix(self.data, self.metric)  # similarity matrix of the data
         clusters = [list(range(self.n_samples))]       # list of clusters, initially the whole dataset is a single cluster
         while True:
             # Compute cluster diameters and find the cluster with max diameter
