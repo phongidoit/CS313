@@ -131,7 +131,6 @@ def main():
         data = st.session_state['data']
         title = st.session_state['title']
         labels = st.session_state['labels']
-        container.write("Chart here")
         container.scatter_chart(data, x="x", y="y")
         container.write("### Select a Clustering Model and Run")
         # Model selection dropdown
@@ -159,20 +158,17 @@ def main():
         
             
         linkage_key = {"ward": "ward", "complete": "complete", "average": "average", "single": "single"}  
-        linkage =  "ward" 
+        linkage =  "complete" 
             
         if model_option == "AGNES" :
             s1, s2 = container2.columns(2)
             with s1:
-                metric_type = st.selectbox("Choose metric type?",list(metric_key.keys())) 
-                
+                metric_type = st.selectbox("Choose metric type?",list(metric_key.keys()))                 
             with s2:
-                linkage = st.selectbox("Choose linkage type?",list(linkage_key.keys()))     
-                
+                linkage = st.selectbox("Choose linkage type?",list(linkage_key.keys())) 
             
         elif  model_option == "DIANA":
             metric_type = container2.selectbox("Choose metric type?",list(metric_key.keys())) 
-        
         
         # Button to run clustering
         if st.button("Run Clustering"):
