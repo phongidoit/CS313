@@ -43,12 +43,12 @@ def generate_data(dataset_name, n_samples=50, seed=30):
     return np.array(data[0]), np.array(data[1]), title
 
 
-def apply_clustering(model_name, data, n_clusters):
+def apply_clustering(model_name, data, n_clusters, metric="euclidean", linkage="ward"):
     if model_name == "AGNES":
-        model = AgglomerativeClustering(linkage="ward", n_clusters=n_clusters)
+        model = AgglomerativeClustering(linkage=linkage, n_clusters=n_clusters, metric=metric)
     elif model_name == "DIANA":
         # model = AgglomerativeClustering(linkage="complete", n_clusters=n_clusters)
-        model = DianaClustering(data)
+        model = DianaClustering(data, metric)
         cluster_labels = model.fit(n_clusters)
         return cluster_labels, model.children_
     elif model_name == "BIRCH":
@@ -69,8 +69,27 @@ def find_cluster(element, clusters):
             return idx
     return -1
 
-def get_label_each_iteration():
-    pass
+def plot_dendrogram(model, **kwargs):
+    # Create linkage matrix and then plot the dendrogram
+
+    # create the counts of samples under each node
+    counts = np.zeros(model.children_.shape[0])
+    n_samples = len(model.labels_)
+    for i, merge in enumerate(model.children_):
+        current_count = 0
+        for child_idx in merge:
+            if child_idx < n_samples:
+                current_count += 1  # leaf node
+            else:
+                current_count += counts[child_idx - n_samples]
+        counts[i] = current_count
+
+    linkage_matrix = np.column_stack(
+        [model.children_, model.distances_, counts]
+    ).astype(float)
+
+    # Plot the corresponding dendrogram
+    dendrogram(linkage_matrix, **kwargs)
 
 def main():
     st.title("Visualization clustering")
@@ -118,6 +137,7 @@ def main():
         # Model selection dropdown
 
         container1 = st.container()
+        container2 = st.container()
     
         sub_col1, sub_col2 = container1.columns(2)
         
@@ -129,14 +149,38 @@ def main():
                             "Number of clusters",
                             min_value=2,
                             ) 
+            
+        metric_key = {
+                "euclidean": "euclidean",
+                "manhattan":"manhattan",
+                "cosine":"cosine"                
+            }
+        metric_type="euclidean"
+        
+            
+        linkage_key = {"ward": "ward", "complete": "complete", "average": "average", "single": "single"}  
+        linkage =  "ward" 
+            
+        if model_option == "AGNES" :
+            s1, s2 = container2.columns(2)
+            with s1:
+                metric_type = st.selectbox("Choose metric type?",list(metric_key.keys())) 
+                
+            with s2:
+                linkage = st.selectbox("Choose linkage type?",list(linkage_key.keys()))     
+                
+            
+        elif  model_option == "DIANA":
+            metric_type = container2.selectbox("Choose metric type?",list(metric_key.keys())) 
+        
         
         # Button to run clustering
         if st.button("Run Clustering"):
             # Apply clustering
-            cluster_labels, model_data = apply_clustering(model_option, data, n_clusters)
+            cluster_labels, model_data = apply_clustering(model_option, data, n_clusters, metric_type, linkage)
             data_pd = pd.DataFrame(data, columns=["x", "y"])
             chart_area = st.empty()
-            
+                    
             if model_data is not None and model_option=="AGNES":
                 #Loop through the animation for agglo algorithm                
                 labels = [i for i in range(numberDatapoints)]
@@ -163,11 +207,12 @@ def main():
                             title=f"{title} - Clustering with {model_option}"
                     ).interactive()
                     
-                    chart_area.altair_chart(chart)
+                    chart_area.altair_chart(chart, use_container_width=True)
                     if i > numberDatapoints - n_clusters - 2:
                         break
                     time.sleep(0.7)
             elif model_data is not None and model_option=="DIANA":
+                labels = np.zeros(len(data), dtype=int)
                 data_pd["cluster"] = labels
 
                 # Top-Down Animation of DIANA Clustering
@@ -189,10 +234,10 @@ def main():
                         title=f"DIANA Clustering - Step {i+1}"
                     ).interactive()
                     
-                    chart_area.altair_chart(chart)
-                    time.sleep(2)
+                    chart_area.altair_chart(chart, use_container_width=True)
+                    time.sleep(1.5)
 
-                    if len(np.unique(labels)) >= n_clusters:
+                    if len(np.unique(labels)) > n_clusters:
                         break
             else:
                 data_pd["cluster"] = cluster_labels
