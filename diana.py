@@ -14,6 +14,8 @@ def DistanceMatrix(data, metric):
     -------
     Distance matrix of shape (n_samples, n_samples)
     '''
+    if metric=="manhattan":
+        metric="cityblock"
     return squareform(pdist(data, metric=metric))
 
 # DianaClustering Class
